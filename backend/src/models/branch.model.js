@@ -24,10 +24,11 @@ const branchSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    hod: {
-        type: String,
+    department: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Department",
         required: true
-    },
+    }
 },
 {timestamps: true}
 )

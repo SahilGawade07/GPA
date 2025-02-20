@@ -1,6 +1,6 @@
 import mongoose from "mongoose";    
 
-const collegeProfileeSchema = new mongoose.Schema({
+const collegeProfileSchema = new mongoose.Schema({
     collegeName: {
         type: String,
         default: 'Government Polytechnic Awsari',
