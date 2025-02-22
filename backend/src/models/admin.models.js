@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import bcrypt from "bcrypt";
 
 const adminSchema = new mongoose.Schema(
   {
@@ -35,23 +36,27 @@ const adminSchema = new mongoose.Schema(
       enum: ["clerk", "principal"],
       required: true,
     },
+    profileImage: {
+      type: String,
+      //required: true
+    }
   },
   {
     timestamps: true,
   }
 );
 
-userSchema.pre("save", async function(next){
+adminSchema.pre("save", async function(next){
     if(!this.isModified("password")) return next();
     this.password = bcrypt.hashSync(this.password, 10);
     next(); 
 })
 
-userSchema.methods.isPasswordcorrect = async function(password){
+adminSchema.methods.isPasswordcorrect = async function(password){
     return await bcrypt.compare(password, this.password);
 }
 
-userSchema.methods.generateAccessToken = function(){
+adminSchema.methods.generateAccessToken = function(){
     return jwt.sign({
         _id: this._id,
         email: this.email,
@@ -64,7 +69,7 @@ process.env.ACCESS_TOKEN_SECRET,
 })
 }
 
-userSchema.methods.generateRefreshToken = function(){
+adminSchema.methods.generateRefreshToken = function(){
     return jwt.sign({
         _id: this._id,
     },
