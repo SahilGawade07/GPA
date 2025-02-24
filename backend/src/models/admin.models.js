@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 const adminSchema = new mongoose.Schema(
   {
@@ -52,7 +53,7 @@ adminSchema.pre("save", async function(next){
     next(); 
 })
 
-adminSchema.methods.isPasswordcorrect = async function(password){
+adminSchema.methods.isPasswordCorrect = async function(password){
     return await bcrypt.compare(password, this.password);
 }
 

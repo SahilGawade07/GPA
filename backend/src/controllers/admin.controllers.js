@@ -2,6 +2,22 @@ import { Router } from "express";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Admin } from "../models/admin.models.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { ApiError } from "../utils/ApiError.js";
+
+const generateAcessAndRefreshTokens = async (adminId) => {
+    try {
+      const admin = await Admin.findById(adminId);
+      const accessToken = admin.generateAccessToken();
+      const refreshToken = admin.generateRefreshToken();
+  
+      admin.refreshToken = refreshToken;
+      await admin.save({ validateBeforeSave: false });
+  
+      return { accessToken, refreshToken };
+    } catch (error) {
+      throw new ApiError(500, "Something went wrong while generating tokens");
+    }
+  };
 
 
 const registerAdmin = asyncHandler(async (req, res) => {
@@ -16,7 +32,7 @@ const registerAdmin = asyncHandler(async (req, res) => {
         throw new Error("All fields are required");
     }
 
-    const existedUser = await Admin.findOne({
+    const existedAdmin = await Admin.findOne({
         $or: [{email}]
     });
 
@@ -48,4 +64,55 @@ const registerAdmin = asyncHandler(async (req, res) => {
 
 });
 
-export { registerAdmin };
+const loginAdmin = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+
+    if(!email){
+        throw new Error(400,"Enter the email");
+    }
+    if(!password){
+        throw new Error(400,"Enter the password");
+    }
+    const admin = await Admin.findOne({email});
+
+    if(!admin){
+        throw new Error(404,"Admin not found");
+    }
+
+    const isPasswordValid = await admin.isPasswordCorrect(password);
+
+    if(!isPasswordValid){
+        throw new Error(401,"Invalid password");
+    }
+    
+    const { accessToken, refreshToken } = await generateAcessAndRefreshTokens(
+        admin._id
+    );
+
+    const loggedInAdmin = await Admin.findById(admin._id).select(
+        "-password -refreshToken"
+    );
+
+    const options = {
+        httponly: true,
+        secure: true
+    };
+
+    return res
+    .status(200)
+    .cookie("refreshToken", refreshToken, options)
+    .cookie(accessToken, accessToken, options)
+    .json(
+        new ApiResponse(
+            200,
+            {
+                user: loggedInAdmin,
+                accessToken,
+                refreshToken
+            },
+            "Admin logged in successfully"
+    )
+)
+});
+
+export { registerAdmin, loginAdmin };
